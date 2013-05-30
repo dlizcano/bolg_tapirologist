@@ -1,0 +1,95 @@
+
+# Maps of collected biodiversity by Colombian institutions
+
+In a previous [post](http://rpubs.com/dlizcano/6337) I got the georeferenced data set of biodiversity from [SIB](http://data.sibcolombia.net/conjuntos/) Colombia using [IAvH code](http://code.google.com/p/descarga-valida-gbif-sib/). The data set is composet of 127 tables corresponding to the [GBIF](http://www.gbif.org/) grid. 
+
+Some tables still need some additional work to fix extra spaces and inconsistent characters. But after some work, I put together all the tables. When plotting the data, you can see where Colombian researchers have mostly collected biodiversity.
+
+This time I want to see the use of ggplot2 and ggmaps to discover the contribution of each institution.
+
+## code chunks
+
+The data set is 70 megas aprox.  
+
+```{r makemaps, echo=TRUE, comment=NA, tidy=TRUE}
+
+require(ggmap)
+require(raster)
+#### load data set 252.944 records
+bigtable<-read.csv(file="data/sib_bigtable.csv",header=T,encoding = "windows-1252")
+
+#get poligon Colombia
+co<-getData("GADM",country="CO",level=1,download=TRUE)
+col_depto <- fortify(co,region="NAME_1") # make compatible to ggplot2
+
+locat=as.vector(bbox(co))
+ncmap = get_map(location=locat,source="stamen",maptype="toner",zoom=6)
+#ggmap(ncmap) not nice
+
+mapbase<- ggplot(col_depto, aes(long,lat,group=group)) + geom_polygon(fill="grey60") + coord_equal() +
+  geom_path(color="grey") 
+
+mapbase2<- ggplot(col_depto, aes(long,lat,group=group)) + geom_polygon(fill="White ") + coord_equal() +
+  geom_path(color="grey") 
+
+map1<-mapbase2 + geom_point(aes(x = lon, y = lat, group = TRUE), 
+                    data = bigtable, size = 1.5,
+                    alpha = 1/20) +
+                    theme(legend.position = "right") +
+                    guides(guide_legend((title = NULL)))
+
+map2<-mapbase + geom_point(aes(x = lon, y = lat, group = FALSE), size=1, 
+                    data = bigtable,alpha=I(0.25),colour="steelblue") + 
+                    stat_binhex(aes(x = lon, y = lat, group = FALSE),
+                    size = .5, binwidth = c(.5,.5), 
+                    alpha = 2/4,data =bigtable)
+
+map3<-mapbase + geom_point(aes(x = lon, y = lat, group = TRUE,
+                     colour = factor(institution)), 
+                     data = bigtable, size = 2,
+                     alpha=1/2) + 
+                     theme(legend.position = "right") 
+
+map4<-mapbase + geom_point(aes(x = lon, y = lat, group = FALSE), 
+                    size=0.5, 
+                    data = bigtable,colour="red") + 
+                    facet_wrap(~ institution, ncol = 6)
+  
+
+```
+
+## The first map. All
+
+A map showing all collection points. The points are transparent. So darker means more points in that location. 
+```{r map1, comment=NA, tidy=TRUE}
+map1
+```
+
+## The second map. Collected Where?
+
+A map showing hexagonal bins with more collection points. Interesting: no hexagons means no colecction in that place.
+```{r map2, comment=NA, tidy=TRUE}
+map2
+```
+
+## The third map by institution
+
+A map showing all the points. Colors by institution.
+```{r map3, comment=NA, fig.width=8, tidy=TRUE}
+map3
+```
+
+## The last map wraped by institution
+
+This is slow, but worth.... meanwhile take a coffee.
+```{r map4, comment=NA, fig.height=7,fig.width=8,fig.align='center',tidy=TRUE}
+map4
+```
+
+### It is nice to see how the Herbario Nacional Colombiano (COL) is the most extensive collection in Colombia. Now I have to figure which colection or institution is 8200001422-01. 
+
+After some coments from [@OigaMen](https://twitter.com/OigaMen) and [@Danipilze](https://twitter.com/Danipilze) now I know that the code 8200001422-01 is part of the IAvH collection. So for the next post I am going to fix that.
+
+I had fun learning how to publish blog posts [from R + knitr to WordPress](http://yihui.name/knitr/demo/wordpress/). Next posts will even more interesting, I am sure.  
+
+
