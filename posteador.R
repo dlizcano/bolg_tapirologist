@@ -1,7 +1,6 @@
 
-
 library(RWordPress)
-options(WordpressLogin = c(user = 'chuleta'),
+options(WordpressLogin = c(user = 'UserName'),
         WordpressURL = 'http://tapirologist.wordpress.com/xmlrpc.php')
 library(knitr)
 knit2wp('sib_map2.Rmd', title = 'Biodiversity by Colombian institutions',
